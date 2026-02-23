@@ -82,6 +82,10 @@ public class DefaultInputHandler extends InputHandler {
         addKeyBinding("C+C", CLIP_COPY);
         addKeyBinding("C+V", CLIP_PASTE);
         addKeyBinding("C+X", CLIP_CUT);
+
+        // custom
+        addKeyBinding("AS+UP", DUPLICATE_LINE_UP);
+        addKeyBinding("AS+DOWN", DUPLICATE_LINE_DOWN);
     }
 
     /**

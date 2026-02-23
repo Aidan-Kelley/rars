@@ -83,6 +83,10 @@ public abstract class InputHandler extends KeyAdapter {
     public static final ActionListener CLIP_PASTE = new clip_paste();
     public static final ActionListener CLIP_CUT = new clip_cut();
 
+    // custom
+    public static final ActionListener DUPLICATE_LINE_DOWN = new duplicate_line_down();
+    public static final ActionListener DUPLICATE_LINE_UP = new duplicate_line_up();
+
     // Default action
     public static final ActionListener INSERT_CHAR = new insert_char();
 
@@ -1071,6 +1075,39 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
             textArea.cut();
+        }
+    }
+
+    public static class duplicate_line_up implements ActionListener {
+        public void actionPerformed(ActionEvent evt) {
+            JEditTextArea textArea = getTextArea(evt);
+
+            int caret = textArea.getCaretPosition();
+
+            new end(false).actionPerformed(evt);
+            new home(true).actionPerformed(evt);
+            textArea.copy();
+            new next_line(false).actionPerformed(evt);
+            textArea.paste();
+            textArea.setSelectedText("\n");
+            textArea.setCaretPosition(caret);
+        }
+    }
+
+    public static class duplicate_line_down implements ActionListener {
+        public void actionPerformed(ActionEvent evt) {
+            JEditTextArea textArea = getTextArea(evt);
+
+            int caret = textArea.getCaretPosition();
+
+            new end(false).actionPerformed(evt);
+            new home(true).actionPerformed(evt);
+            textArea.copy();
+            new next_line(false).actionPerformed(evt);
+            textArea.paste();
+            textArea.setSelectedText("\n");
+            textArea.setCaretPosition(caret);
+            new next_line(false).actionPerformed(evt);
         }
     }
 }
