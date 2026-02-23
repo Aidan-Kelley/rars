@@ -86,6 +86,7 @@ public class DefaultInputHandler extends InputHandler {
         // custom
         addKeyBinding("AS+UP", DUPLICATE_LINE_UP);
         addKeyBinding("AS+DOWN", DUPLICATE_LINE_DOWN);
+        addKeyBinding("C+P", DEBUG);
     }
 
     /**

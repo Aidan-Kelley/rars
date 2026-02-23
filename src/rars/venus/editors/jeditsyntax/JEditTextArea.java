@@ -29,6 +29,8 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import static rars.venus.editors.jeditsyntax.InputHandler.SMART_HOME_END_PROPERTY;
+
 /**
  * jEdit's text area component. It is more suited for editing program
  * source code than JEditorPane, because it drops the unnecessary features
@@ -151,7 +153,7 @@ public class JEditTextArea extends JComponent {
                     public boolean dispatchKeyEvent(KeyEvent e) {
                         int modifiers = e.getModifiers();
                         if (JEditTextArea.this.isFocusOwner() && e.getKeyCode() == KeyEvent.VK_TAB
-                            && (modifiers == 0 || (modifiers & InputEvent.SHIFT_MASK) != 0)) {
+                                && (modifiers == 0 || (modifiers & InputEvent.SHIFT_MASK) != 0)) {
                             processKeyEvent(e);
                             return true;
                         } else {
@@ -497,23 +499,23 @@ public class JEditTextArea extends JComponent {
      */
     public int _offsetToX(int line, int offset) {
         TokenMarker tokenMarker = getTokenMarker();
-   
-   /* Use painter's cached info for speed */
+
+        /* Use painter's cached info for speed */
         FontMetrics fm = painter.getFontMetrics();
 
         getLineText(line, lineSegment);
 
         int segmentOffset = lineSegment.offset;
         int x = horizontalOffset;
-   
-   /* If syntax coloring is disabled, do simple translation */
+
+        /* If syntax coloring is disabled, do simple translation */
         if (tokenMarker == null) {
             lineSegment.count = offset;
             return x + Utilities.getTabbedTextWidth(lineSegment,
                     fm, x, painter, 0);
         }
-      /* If syntax coloring is enabled, we have to do this because
-      * tokens can vary in width */
+        /* If syntax coloring is enabled, we have to do this because
+         * tokens can vary in width */
         else {
             Token tokens;
             if (painter.currentLineIndex == line
@@ -565,8 +567,8 @@ public class JEditTextArea extends JComponent {
      */
     public int xToOffset(int line, int x) {
         TokenMarker tokenMarker = getTokenMarker();
-   
-   /* Use painter's cached info for speed */
+
+        /* Use painter's cached info for speed */
         FontMetrics fm = painter.getFontMetrics();
 
         getLineText(line, lineSegment);
@@ -1437,6 +1439,103 @@ public class JEditTextArea extends JComponent {
                         + " contain a string");
             }
         }
+    }
+
+    /**
+     * Moves caret to end of current line
+     *
+     * @param select use select mode
+     */
+    public void moveToLineEnd(boolean select) {
+        int caret = getCaretPosition();
+
+        int lastOfLine = getLineEndOffset(
+                getCaretLine()) - 1;
+        int lastVisibleLine = getFirstLine()
+                + getVisibleLines();
+        if (lastVisibleLine >= getLineCount()) {
+            lastVisibleLine = Math.min(getLineCount() - 1,
+                    lastVisibleLine);
+        } else
+            lastVisibleLine -= (getElectricScroll() + 1);
+
+        int lastVisible = getLineEndOffset(lastVisibleLine) - 1;
+        int lastDocument = getDocumentLength();
+
+        if (caret == lastDocument) {
+            return;
+        } else if (!Boolean.TRUE.equals(getClientProperty(
+                SMART_HOME_END_PROPERTY)))
+            caret = lastOfLine;
+        else if (caret == lastVisible)
+            caret = lastDocument;
+        else if (caret == lastOfLine)
+            caret = lastVisible;
+        else
+            caret = lastOfLine;
+
+        if (select)
+            select(getMarkPosition(), caret);
+        else
+            setCaretPosition(caret);
+    }
+
+    /**
+     * Moves caret to start of current line
+     *
+     * @param select use select mode
+     */
+    public void moveToLineHome(boolean select) {
+        int caret = getCaretPosition();
+
+        int firstLine = getFirstLine();
+
+        int firstOfLine = getLineStartOffset(getCaretLine());
+        int firstVisibleLine = (firstLine == 0 ? 0 :
+                firstLine + getElectricScroll());
+        int firstVisible = getLineStartOffset(firstVisibleLine);
+
+        if (caret == 0) {
+            return;
+        } else if (!Boolean.TRUE.equals(getClientProperty(
+                SMART_HOME_END_PROPERTY)))
+            caret = firstOfLine;
+        else if (caret == firstVisible)
+            caret = 0;
+        else if (caret == firstOfLine)
+            caret = firstVisible;
+        else
+            caret = firstOfLine;
+        if (select)
+            select(getMarkPosition(), caret);
+        else
+            setCaretPosition(caret);
+    }
+
+    /**
+     * Moves caret down to next line
+     *
+     * @param select use select mode
+     */
+    public void nextLine(boolean select) {
+
+        int caret = getCaretPosition();
+        int line = getCaretLine();
+
+        if(line ==getLineCount()-1) {
+            return;
+        }
+
+        int magic = getMagicCaretPosition();
+        if(magic ==-1) {
+            magic = offsetToX(line, caret - getLineStartOffset(line));
+        }
+        caret = getLineStartOffset(line +1) + xToOffset(line +1,magic);
+        if(select)
+            select(getMarkPosition(),caret);
+        else
+            setCaretPosition(caret);
+        setMagicCaretPosition(magic);
     }
 
     /**

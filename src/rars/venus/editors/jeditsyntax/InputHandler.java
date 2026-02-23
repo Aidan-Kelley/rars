@@ -84,8 +84,9 @@ public abstract class InputHandler extends KeyAdapter {
     public static final ActionListener CLIP_CUT = new clip_cut();
 
     // custom
-    public static final ActionListener DUPLICATE_LINE_DOWN = new duplicate_line_down();
-    public static final ActionListener DUPLICATE_LINE_UP = new duplicate_line_up();
+    public static final ActionListener DUPLICATE_LINE_DOWN = new duplicate(duplicate.Direction.DOWN);
+    public static final ActionListener DUPLICATE_LINE_UP = new duplicate(duplicate.Direction.UP);
+    public static final ActionListener DEBUG = new debug();
 
     // Default action
     public static final ActionListener INSERT_CHAR = new insert_char();
@@ -538,39 +539,7 @@ public abstract class InputHandler extends KeyAdapter {
 
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
-
-            int caret = textArea.getCaretPosition();
-
-            int lastOfLine = textArea.getLineEndOffset(
-                    textArea.getCaretLine()) - 1;
-            int lastVisibleLine = textArea.getFirstLine()
-                    + textArea.getVisibleLines();
-            if (lastVisibleLine >= textArea.getLineCount()) {
-                lastVisibleLine = Math.min(textArea.getLineCount() - 1,
-                        lastVisibleLine);
-            } else
-                lastVisibleLine -= (textArea.getElectricScroll() + 1);
-
-            int lastVisible = textArea.getLineEndOffset(lastVisibleLine) - 1;
-            int lastDocument = textArea.getDocumentLength();
-
-            if (caret == lastDocument) {
-                textArea.getToolkit().beep();
-                return;
-            } else if (!Boolean.TRUE.equals(textArea.getClientProperty(
-                    SMART_HOME_END_PROPERTY)))
-                caret = lastOfLine;
-            else if (caret == lastVisible)
-                caret = lastDocument;
-            else if (caret == lastOfLine)
-                caret = lastVisible;
-            else
-                caret = lastOfLine;
-
-            if (select)
-                textArea.select(textArea.getMarkPosition(), caret);
-            else
-                textArea.setCaretPosition(caret);
+            textArea.moveToLineEnd(select);
         }
     }
 
@@ -609,34 +578,7 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
 
-            int caret = textArea.getCaretPosition();
-
-            int firstLine = textArea.getFirstLine();
-
-            int firstOfLine = textArea.getLineStartOffset(
-                    textArea.getCaretLine());
-            int firstVisibleLine = (firstLine == 0 ? 0 :
-                    firstLine + textArea.getElectricScroll());
-            int firstVisible = textArea.getLineStartOffset(
-                    firstVisibleLine);
-
-            if (caret == 0) {
-                textArea.getToolkit().beep();
-                return;
-            } else if (!Boolean.TRUE.equals(textArea.getClientProperty(
-                    SMART_HOME_END_PROPERTY)))
-                caret = firstOfLine;
-            else if (caret == firstVisible)
-                caret = 0;
-            else if (caret == firstOfLine)
-                caret = firstVisible;
-            else
-                caret = firstOfLine;
-
-            if (select)
-                textArea.select(textArea.getMarkPosition(), caret);
-            else
-                textArea.setCaretPosition(caret);
+            textArea.moveToLineHome(select);
         }
     }
 
@@ -800,27 +742,7 @@ public abstract class InputHandler extends KeyAdapter {
 
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
-            int caret = textArea.getCaretPosition();
-            int line = textArea.getCaretLine();
-
-            if (line == textArea.getLineCount() - 1) {
-                textArea.getToolkit().beep();
-                return;
-            }
-
-            int magic = textArea.getMagicCaretPosition();
-            if (magic == -1) {
-                magic = textArea.offsetToX(line,
-                        caret - textArea.getLineStartOffset(line));
-            }
-
-            caret = textArea.getLineStartOffset(line + 1)
-                    + textArea.xToOffset(line + 1, magic);
-            if (select)
-                textArea.select(textArea.getMarkPosition(), caret);
-            else
-                textArea.setCaretPosition(caret);
-            textArea.setMagicCaretPosition(magic);
+            textArea.nextLine(select);
         }
     }
 
@@ -1078,36 +1000,52 @@ public abstract class InputHandler extends KeyAdapter {
         }
     }
 
-    public static class duplicate_line_up implements ActionListener {
+    public static class debug implements ActionListener {
         public void actionPerformed(ActionEvent evt) {
-            JEditTextArea textArea = getTextArea(evt);
-
-            int caret = textArea.getCaretPosition();
-
-            new end(false).actionPerformed(evt);
-            new home(true).actionPerformed(evt);
-            textArea.copy();
-            new next_line(false).actionPerformed(evt);
-            textArea.paste();
-            textArea.setSelectedText("\n");
-            textArea.setCaretPosition(caret);
+            var textArea = getTextArea(evt);
+            System.out.println(textArea.getCaretLine());
+            System.out.println(textArea.getLineCount());
         }
     }
 
-    public static class duplicate_line_down implements ActionListener {
+    public static class duplicate implements ActionListener {
+        public enum Direction {
+            UP, DOWN
+        }
+
+        private final Direction direction;
+
+        /**
+         * @param direction duplicate text up or down */
+        public duplicate(Direction direction) { this.direction = direction; }
+
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
 
+            if (textArea.getLineLength(textArea.getCaretLine()) == 0) {
+                textArea.setSelectedText("\n");
+                if (direction == Direction.UP) {
+                    new prev_line(false).actionPerformed(evt);
+                }
+                return;
+            }
+
             int caret = textArea.getCaretPosition();
 
-            new end(false).actionPerformed(evt);
-            new home(true).actionPerformed(evt);
+            textArea.moveToLineEnd(false);
+            textArea.moveToLineHome(true);
             textArea.copy();
-            new next_line(false).actionPerformed(evt);
+            if (textArea.getLineCount() == textArea.getCaretLine() + 1) {
+                textArea.selectNone();
+//                textArea.setSelectedText("\n");
+            } else
+                textArea.nextLine(false);
             textArea.paste();
             textArea.setSelectedText("\n");
             textArea.setCaretPosition(caret);
-            new next_line(false).actionPerformed(evt);
+            if (direction == Direction.DOWN) {
+                textArea.nextLine(false);
+            }
         }
     }
 }
