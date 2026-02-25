@@ -9,8 +9,6 @@
 
 package rars.venus.editors.jeditsyntax;
 
-import jdk.jfr.StackTrace;
-
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
@@ -86,9 +84,10 @@ public abstract class InputHandler extends KeyAdapter {
     public static final ActionListener CLIP_CUT = new clip_cut();
 
     // custom
-    public static final ActionListener DUPLICATE_LINE_DOWN = new duplicate(duplicate.Direction.DOWN);
-    public static final ActionListener DUPLICATE_LINE_UP = new duplicate(duplicate.Direction.UP);
-    public static final ActionListener DEBUG = new debug();
+    public static final ActionListener DUPLICATE_LINE_DOWN = new duplicate(Direction.DOWN);
+    public static final ActionListener DUPLICATE_LINE_UP = new duplicate(Direction.UP);
+    public static final ActionListener MOVE_TEXT_DOWN = new move_text(Direction.DOWN);
+    public static final ActionListener MOVE_TEXT_UP = new move_text(Direction.UP);
 
     // Default action
     public static final ActionListener INSERT_CHAR = new insert_char();
@@ -138,6 +137,9 @@ public abstract class InputHandler extends KeyAdapter {
         actions.put("clipboard-cut", CLIP_CUT);
     }
 
+    public enum Direction {
+        UP, DOWN
+    }
     /**
      * Returns a named text area action.
      *
@@ -1002,27 +1004,36 @@ public abstract class InputHandler extends KeyAdapter {
         }
     }
 
-    public static class debug implements ActionListener {
+    public static class move_text implements ActionListener {
+        private final Direction direction;
+
+        /**
+         * @param direction duplicate text up or down */
+        public move_text(Direction direction) { this.direction = direction; }
+
         public void actionPerformed(ActionEvent evt) {
             var textArea = getTextArea(evt);
             int caretLine = textArea.getCaretLine();
+            if (direction == Direction.DOWN) caretLine++;
             String currentLine = textArea.getLineText(caretLine);
-            String aboveLine = textArea.getLineText(caretLine - 1);
-            int caret = textArea.getCaretPosition() - aboveLine.length() - 1;
+            int startCaret = textArea.getCaretPosition();
+            int endCaret;
+            if (direction == Direction.DOWN) {
+                endCaret = startCaret + (textArea.getLineLength(caretLine) + 1);
+            } else {
+                endCaret = startCaret - (textArea.getLineLength(caretLine - 1) + 1);
+            }
             try {
                 textArea.getDocument().remove(textArea.getLineStartOffset(caretLine) - 1, textArea.getLineLength(caretLine) + 1);
                 textArea.getDocument().insertString(textArea.getLineStartOffset(caretLine - 1), currentLine + "\n", null);
             } catch (BadLocationException e) {
                 e.printStackTrace();
             }
-            textArea.setCaretPosition(caret);
+            textArea.setCaretPosition(endCaret);
         }
     }
 
     public static class duplicate implements ActionListener {
-        public enum Direction {
-            UP, DOWN
-        }
 
         private final Direction direction;
 
