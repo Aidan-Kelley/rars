@@ -9,6 +9,8 @@
 
 package rars.venus.editors.jeditsyntax;
 
+import jdk.jfr.StackTrace;
+
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
@@ -1003,8 +1005,17 @@ public abstract class InputHandler extends KeyAdapter {
     public static class debug implements ActionListener {
         public void actionPerformed(ActionEvent evt) {
             var textArea = getTextArea(evt);
-            System.out.println(textArea.getCaretLine());
-            System.out.println(textArea.getLineCount());
+            int caretLine = textArea.getCaretLine();
+            String currentLine = textArea.getLineText(caretLine);
+            String aboveLine = textArea.getLineText(caretLine - 1);
+            int caret = textArea.getCaretPosition() - aboveLine.length() - 1;
+            try {
+                textArea.getDocument().remove(textArea.getLineStartOffset(caretLine) - 1, textArea.getLineLength(caretLine) + 1);
+                textArea.getDocument().insertString(textArea.getLineStartOffset(caretLine - 1), currentLine + "\n", null);
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+            textArea.setCaretPosition(caret);
         }
     }
 
@@ -1037,7 +1048,6 @@ public abstract class InputHandler extends KeyAdapter {
             textArea.copy();
             if (textArea.getLineCount() == textArea.getCaretLine() + 1) {
                 textArea.selectNone();
-//                textArea.setSelectedText("\n");
             } else
                 textArea.nextLine(false);
             textArea.paste();
