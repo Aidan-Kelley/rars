@@ -1518,11 +1518,10 @@ public class JEditTextArea extends JComponent {
      * @param select use select mode
      */
     public void nextLine(boolean select) {
-
         int caret = getCaretPosition();
         int line = getCaretLine();
 
-        if(line ==getLineCount()-1) {
+        if(line == getLineCount() - 1) {
             return;
         }
 
@@ -1530,9 +1529,38 @@ public class JEditTextArea extends JComponent {
         if(magic ==-1) {
             magic = offsetToX(line, caret - getLineStartOffset(line));
         }
-        caret = getLineStartOffset(line +1) + xToOffset(line +1,magic);
+        caret = getLineStartOffset(line +1) + xToOffset(line +1, magic);
         if(select)
             select(getMarkPosition(),caret);
+        else
+            setCaretPosition(caret);
+        setMagicCaretPosition(magic);
+    }
+
+    /**
+     * Moves caret down to prev line
+     *
+     * @param select use select mode
+     */
+    public void prevLine(boolean select) {
+        int caret = getCaretPosition();
+        int line = getCaretLine();
+
+        if (line == 0) {
+            getToolkit().beep();
+            return;
+        }
+
+        int magic = getMagicCaretPosition();
+        if (magic == -1) {
+            magic = offsetToX(line,
+                    caret - getLineStartOffset(line));
+        }
+
+        caret = getLineStartOffset(line - 1)
+                + xToOffset(line - 1, magic);
+        if (select)
+            select(getMarkPosition(), caret);
         else
             setCaretPosition(caret);
         setMagicCaretPosition(magic);

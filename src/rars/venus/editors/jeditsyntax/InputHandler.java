@@ -857,27 +857,7 @@ public abstract class InputHandler extends KeyAdapter {
 
         public void actionPerformed(ActionEvent evt) {
             JEditTextArea textArea = getTextArea(evt);
-            int caret = textArea.getCaretPosition();
-            int line = textArea.getCaretLine();
-
-            if (line == 0) {
-                textArea.getToolkit().beep();
-                return;
-            }
-
-            int magic = textArea.getMagicCaretPosition();
-            if (magic == -1) {
-                magic = textArea.offsetToX(line,
-                        caret - textArea.getLineStartOffset(line));
-            }
-
-            caret = textArea.getLineStartOffset(line - 1)
-                    + textArea.xToOffset(line - 1, magic);
-            if (select)
-                textArea.select(textArea.getMarkPosition(), caret);
-            else
-                textArea.setCaretPosition(caret);
-            textArea.setMagicCaretPosition(magic);
+            textArea.prevLine(select);
         }
     }
 
@@ -1015,12 +995,16 @@ public abstract class InputHandler extends KeyAdapter {
             var textArea = getTextArea(evt);
             int caretLine = textArea.getCaretLine();
             if (direction == Direction.DOWN) caretLine++;
+            if(caretLine >= textArea.getLineCount())
+                return;
             String currentLine = textArea.getLineText(caretLine);
             int startCaret = textArea.getCaretPosition();
             int endCaret;
             if (direction == Direction.DOWN) {
                 endCaret = startCaret + (textArea.getLineLength(caretLine) + 1);
             } else {
+                if(caretLine == 0)
+                    return;
                 endCaret = startCaret - (textArea.getLineLength(caretLine - 1) + 1);
             }
             try {
@@ -1047,7 +1031,7 @@ public abstract class InputHandler extends KeyAdapter {
             if (textArea.getLineLength(textArea.getCaretLine()) == 0) {
                 textArea.setSelectedText("\n");
                 if (direction == Direction.UP) {
-                    new prev_line(false).actionPerformed(evt);
+                    textArea.prevLine(false);
                 }
                 return;
             }
